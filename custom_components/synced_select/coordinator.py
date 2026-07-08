@@ -1,14 +1,18 @@
 """Coordinator for the Synced Select integration."""
 
 from __future__ import annotations
+
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import LOGGER, DOMAIN, CONF_ENTITIES
+from .const import DOMAIN, LOGGER
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class SyncedSelectCoordinator(DataUpdateCoordinator[list[str]]):
@@ -33,7 +37,7 @@ class SyncedSelectCoordinator(DataUpdateCoordinator[list[str]]):
             state = self.hass.states.get(entity_id)
             if state:
                 options = state.attributes.get("options")
-                LOGGER.info(f"Found {entity_id} with options: {options} {isinstance(options, list)}")
+                LOGGER.debug("Found %s with options: %s", entity_id, options)
                 if isinstance(options, list):
                     for option in options:
                         all_shared_opts[option] += 1
@@ -43,8 +47,18 @@ class SyncedSelectCoordinator(DataUpdateCoordinator[list[str]]):
                 self.hass, self.source_entities, self._handle_state_change
             )
             self._listeners_setup = True
-        LOGGER.info(f"Found {total_entities} entities with options: {all_shared_opts.keys()}")
-        return [option for option, count in all_shared_opts.items() if count == total_entities]
+        shared = [
+            option
+            for option, count in all_shared_opts.items()
+            if count == total_entities
+        ]
+        LOGGER.debug(
+            "Computed %d shared option(s) across %d entities: %s",
+            len(shared),
+            total_entities,
+            shared,
+        )
+        return shared
 
     async def async_unload(self) -> None:
         """Unload the coordinator and clean up listeners."""
@@ -53,5 +67,5 @@ class SyncedSelectCoordinator(DataUpdateCoordinator[list[str]]):
 
     @callback
     def _handle_state_change(self, event) -> None:
-        """Handle state changes for source entities and request a refresh."""
+        """Handle source-entity state changes by requesting a (debounced) refresh."""
         self.hass.async_create_task(self.async_request_refresh())

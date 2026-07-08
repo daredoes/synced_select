@@ -1,46 +1,94 @@
-# Notice
+# Synced Select
 
-The component and platforms in this repository are not meant to be used by a
-user, but as a "blueprint" that custom component developers can build
-upon, to make more awesome stuff.
+A Home Assistant integration that gives you one select control that drives several
+`select` and `input_select` entities at once.
 
-HAVE FUN! 😎
+Point it at a group of selects, and it creates a single "Synced Select" entity. Its
+list of options is whatever those entities have in common, and picking an option sends
+that choice to every one of them.
 
-## Why?
+## Why you'd want this
 
-This is simple, by having custom_components look (README + structure) the same
-it is easier for developers to help each other and for users to start using them.
+Say you have three smart thermostats, each with a `select` for its fan mode, or a
+handful of `input_select` helpers that should always march in lockstep. Normally you'd
+write an automation to keep them aligned. This does that for you with one entity you can
+drop on a dashboard or call from a script.
 
-If you are a developer and you want to add things to this "blueprint" that you think more
-developers will have use for, please open a PR to add it :)
+## How it works
 
-## What?
+```mermaid
+flowchart TD
+    subgraph HA[Home Assistant]
+        SS[Synced Select entity]
+        C[Coordinator]
+        E1[select.thermostat_1]
+        E2[select.thermostat_2]
+        E3[input_select.mode]
+    end
+    E1 -- state change --> C
+    E2 -- state change --> C
+    E3 -- state change --> C
+    C -- options common to all --> SS
+    SS -- picks 'Auto' --> E1
+    SS -- picks 'Auto' --> E2
+    SS -- picks 'Auto' --> E3
+```
 
-This repository contains multiple files, here is a overview:
+Two things worth knowing about the behavior:
 
-File | Purpose | Documentation
--- | -- | --
-`.devcontainer.json` | Used for development/testing with Visual Studio Code. | [Documentation](https://code.visualstudio.com/docs/remote/containers)
-`.github/ISSUE_TEMPLATE/*.yml` | Templates for the issue tracker | [Documentation](https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository)
-`custom_components/area_scene_state_machine/*` | Integration files, this is where everything happens. | [Documentation](https://developers.home-assistant.io/docs/creating_component_index)
-`CONTRIBUTING.md` | Guidelines on how to contribute. | [Documentation](https://help.github.com/en/github/building-a-strong-community/setting-guidelines-for-repository-contributors)
-`LICENSE` | The license file for the project. | [Documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/licensing-a-repository)
-`README.md` | The file you are reading now, should contain info about the integration, installation and configuration instructions. | [Documentation](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
-`requirements.txt` | Python packages used for development/lint/testing this integration. | [Documentation](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
+- **Options are the common set.** The synced entity only offers options that *every*
+  source entity supports. If one thermostat can do `Auto`/`Low`/`High` and another only
+  does `Auto`/`Low`, you'll see `Auto` and `Low`. This keeps you from sending an option
+  that some entity can't accept. The list updates automatically when a source entity's
+  options change.
+- **It's momentary.** After you pick an option and it's been sent out, the control
+  clears itself back to "unset" rather than showing a current value. It's a "push this
+  to everyone" button, not a mirror of one entity's state — the source entities can
+  legitimately drift apart, so there's no single value to display.
 
-## How?
+## Installation
 
-1. Create a new repository in GitHub, using this repository as a template by clicking the "Use this template" button in the GitHub UI.
-1. Open your new repository in Visual Studio Code devcontainer (Preferably with the "`Dev Containers: Clone Repository in Named Container Volume...`" option).
-1. Rename all instances of the `area_scene_state_machine` to `custom_components/<your_integration_domain>` (e.g. `custom_components/awesome_integration`).
-1. Rename all instances of the `Area Scene State Machine` to `<Your Integration Name>` (e.g. `Awesome Integration`).
-1. Run the `scripts/develop` to start HA and test out your new integration.
+### HACS (recommended)
 
-## Next steps
+1. In HACS, open the three-dot menu and choose **Custom repositories**.
+2. Add `https://github.com/daredoes/synced_select` as an **Integration**.
+3. Search for **Synced Select**, install it, and restart Home Assistant.
 
-These are some next steps you may want to look into:
-- Add tests to your integration, [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) can help you get started.
-- Add brand images (logo/icon) to https://github.com/home-assistant/brands.
-- Create your first release.
-- Share your integration on the [Home Assistant Forum](https://community.home-assistant.io/).
-- Submit your integration to [HACS](https://hacs.xyz/docs/publish/start).
+### Manual
+
+Copy `custom_components/synced_select` into your Home Assistant `config/custom_components`
+directory and restart.
+
+## Setup
+
+1. Go to **Settings → Devices & Services → Add Integration** and search for
+   **Synced Select**.
+2. Give it a **name** (this becomes the device/entity name).
+3. Pick the **entities** to sync — any mix of `select` and `input_select` entities.
+
+That's it. A new Synced Select entity appears with the shared options ready to use.
+
+### Changing the entities later
+
+Open the integration's **Configure** button to add or remove entities from the group.
+The picker hides this integration's own entity so you can't accidentally sync it to
+itself.
+
+## Using it
+
+Select an option however you like — from the dashboard, or in an automation/script:
+
+```yaml
+service: select.select_option
+target:
+  entity_id: select.synced_select   # your entity's id
+data:
+  option: "Auto"
+```
+
+The choice is forwarded to every source entity via their own `select.select_option` /
+`input_select.select_option` service.
+
+## Contributing
+
+Bug reports and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).

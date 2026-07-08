@@ -3,21 +3,19 @@
 from __future__ import annotations
 
 import voluptuous as vol
-
-from homeassistant.config_entries import ConfigFlow, OptionsFlow, ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er, selector
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import selector
 
-from .const import DOMAIN, CONF_ENTITIES, LOGGER
+from .const import CONF_ENTITIES, DOMAIN
 
 
 def get_select_entities(hass: HomeAssistant) -> list[str]:
     """Get all select and input_select entities."""
-    return (
-        hass.states.async_entity_ids("select")
-        + hass.states.async_entity_ids("input_select")
+    return hass.states.async_entity_ids("select") + hass.states.async_entity_ids(
+        "input_select"
     )
-
 
 
 class SyncedSelectConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -27,7 +25,9 @@ class SyncedSelectConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> "SyncedSelectOptionsFlowHandler":
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> SyncedSelectOptionsFlowHandler:
         """Get the options flow for this handler."""
         return SyncedSelectOptionsFlowHandler(config_entry)
 
@@ -42,11 +42,14 @@ class SyncedSelectConfigFlow(ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required("name"): str,
                     vol.Required(CONF_ENTITIES): selector.EntitySelector(
-                        selector.EntitySelectorConfig(domain=["select", "input_select"], multiple=True),
+                        selector.EntitySelectorConfig(
+                            domain=["select", "input_select"], multiple=True
+                        ),
                     ),
                 }
             ),
         )
+
 
 class SyncedSelectOptionsFlowHandler(OptionsFlow):
     """Handle an options flow for Synced Select."""
@@ -59,11 +62,11 @@ class SyncedSelectOptionsFlowHandler(OptionsFlow):
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
-        
+
         config_entry = self.hass.config_entries.async_get_entry(self.config_entry_id)
 
         entity_registry = er.async_get(self.hass)
-        entities_to_exclude = [ 
+        entities_to_exclude = [
             entry.entity_id
             for entry in entity_registry.entities.values()
             if entry.config_entry_id == config_entry.entry_id
@@ -78,9 +81,9 @@ class SyncedSelectOptionsFlowHandler(OptionsFlow):
                         default=config_entry.options.get(CONF_ENTITIES, []),
                     ): selector.EntitySelector(
                         selector.EntitySelectorConfig(
-                            domain=["select", "input_select"], 
+                            domain=["select", "input_select"],
                             multiple=True,
-                            exclude_entities=entities_to_exclude
+                            exclude_entities=entities_to_exclude,
                         ),
                     ),
                 }

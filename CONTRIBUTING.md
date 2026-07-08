@@ -44,17 +44,25 @@ People *love* thorough bug reports. I'm not even kidding.
 
 ## Use a Consistent Coding Style
 
-Use [black](https://github.com/ambv/black) to make sure the code follows the style.
+Run [ruff](https://docs.astral.sh/ruff/) to keep the code formatted and linted.
+The easiest way is `mise run lint` (which shells out to `uv run ruff …`); the
+older `scripts/lint` wrapper still works too.
 
-## Test your code modification
+## Development environment
 
-This custom component is based on [area_scene_state_machine template](https://github.com/ludeeus/area_scene_state_machine).
+This repo uses [mise](https://mise.jdx.dev/) to pin the toolchain and
+[uv](https://docs.astral.sh/uv/) to manage dependencies:
 
-It comes with development environment in a container, easy to launch
-if you use Visual Studio Code. With this container you will have a stand alone
-Home Assistant instance running and already configured with the included
-[`configuration.yaml`](./config/configuration.yaml)
-file.
+```bash
+mise install     # provision Python + uv
+mise run setup   # uv sync — install dependencies
+mise run develop # start a local Home Assistant with this integration loaded
+mise run test    # run the test suite
+```
+
+It also ships a dev container, easy to launch from Visual Studio Code. Either way you
+get a stand-alone Home Assistant instance pre-configured with the included
+[`configuration.yaml`](./config/configuration.yaml) file.
 
 ## License
 

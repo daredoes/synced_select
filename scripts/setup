@@ -4,4 +4,6 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-python3 -m pip install --requirement requirements.txt
+# Dependencies are managed with uv (see pyproject.toml). `uv sync` creates/updates
+# the .venv from the locked dependency set.
+uv sync

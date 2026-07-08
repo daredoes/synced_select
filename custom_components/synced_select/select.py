@@ -11,7 +11,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, CONF_ENTITIES
+from .const import CONF_ENTITIES, DOMAIN
 from .coordinator import SyncedSelectCoordinator
 
 
@@ -25,16 +25,13 @@ async def async_setup_entry(
     coordinator = SyncedSelectCoordinator(hass, entry.entry_id, entities)
     await coordinator.async_config_entry_first_refresh()
 
+    # Tear down the coordinator's state-change listeners on unload/reload. HA never
+    # calls a platform module's async_unload_entry, so this hook is what actually runs.
+    entry.async_on_unload(coordinator.async_unload)
+
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
     async_add_entities([SyncedSelectEntity(coordinator, entry)])
-
-
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload the Synced Select select entity."""
-    coordinator = hass.data[DOMAIN].pop(entry.entry_id)
-    await coordinator.async_unload()
-    return True
 
 
 class SyncedSelectEntity(CoordinatorEntity[SyncedSelectCoordinator], SelectEntity):
@@ -55,6 +52,7 @@ class SyncedSelectEntity(CoordinatorEntity[SyncedSelectCoordinator], SelectEntit
         )
         self._attr_options = coordinator.data or []
         self._attr_current_option = None
+        self._reset_task: asyncio.Task | None = None
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -76,10 +74,16 @@ class SyncedSelectEntity(CoordinatorEntity[SyncedSelectCoordinator], SelectEntit
                 blocking=False,
             )
 
-        self.hass.async_create_task(self._reset_state())
+        self._reset_task = self.hass.async_create_task(self._reset_state())
 
     async def _reset_state(self) -> None:
-        """Reset the select entity state after a delay."""
+        """Reset the momentary selection back to "unset" after a short delay."""
         await asyncio.sleep(0.25)
         self._attr_current_option = None
         self.async_write_ha_state()
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Cancel any pending reset so we don't write state after removal."""
+        if self._reset_task and not self._reset_task.done():
+            self._reset_task.cancel()
+        await super().async_will_remove_from_hass()

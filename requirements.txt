@@ -1,4 +1,7 @@
+# Dependencies are managed with uv via pyproject.toml — run `uv sync` (or `mise run setup`).
+# This file is kept for tooling that still expects a requirements.txt and mirrors the
+# runtime + dev dependencies declared in pyproject.toml.
 colorlog==6.9.0
 homeassistant==2025.8.1
-pip>=21.3.1
 ruff==0.12.1
+pytest-homeassistant-custom-component==0.13.270

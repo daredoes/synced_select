@@ -1,0 +1,22 @@
+[tools]
+python = "3.13"
+uv = "latest"
+
+[tasks.setup]
+description = "Install dependencies with uv"
+run = "uv sync"
+
+[tasks.lint]
+description = "Format and lint with ruff"
+run = [
+    "uv run ruff format .",
+    "uv run ruff check . --fix",
+]
+
+[tasks.develop]
+description = "Start a local Home Assistant with this integration loaded"
+run = "./scripts/develop"
+
+[tasks.test]
+description = "Run the test suite"
+run = "uv run pytest"

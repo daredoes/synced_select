@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a Synced Select",
+        "description": "Create one control that drives several select and input_select entities at once. It will offer the options they have in common.",
+        "data": {
+          "name": "Name",
+          "entities": "Entities to sync"
+        },
+        "data_description": {
+          "name": "Shown as the name of the created device and entity.",
+          "entities": "The select and input_select entities to keep in sync."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Synced Select options",
+        "description": "Add or remove the entities kept in sync.",
+        "data": {
+          "entities": "Entities to sync"
+        },
+        "data_description": {
+          "entities": "The select and input_select entities to keep in sync."
+        }
+      }
+    }
+  }
+}

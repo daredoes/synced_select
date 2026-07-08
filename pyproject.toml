@@ -1,0 +1,30 @@
+[project]
+name = "synced-select"
+version = "1.0.0"
+description = "Home Assistant integration: one select control that drives several select/input_select entities at once."
+readme = "README.md"
+requires-python = ">=3.13.2,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "daredoes" }]
+dependencies = [
+    "colorlog==6.9.0",
+    "homeassistant==2025.8.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff==0.12.1",
+    "pytest-homeassistant-custom-component==0.13.270",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.uv]
+# Home Assistant only publishes a wheel for the exact pinned version; keep resolution
+# focused on our supported interpreter.
+package = false
+# pycares 5.x drops the ares_query_a_result API that aiodns 3.5 still imports; Home
+# Assistant pins pycares below 5, so mirror that here to keep the env importable.
+constraint-dependencies = ["pycares<5"]
